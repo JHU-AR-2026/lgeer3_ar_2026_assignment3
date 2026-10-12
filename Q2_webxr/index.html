@@ -64,17 +64,17 @@ var createScene = async function () {
                 trigger.onButtonStateChangedObservable.add(function () {
                     if (trigger.changes.pressed && trigger.pressed && hitPos) {
                         var pos = hitPos.clone();
-                        BABYLON.SceneLoader.ImportMesh("", "assets/", "Duck.glb", scene, function (meshes) {
-                            var duck = meshes[0];
-                            duck.position = pos;
-                            duck.rotationQuaternion = null;
-                            duck.rotation = new BABYLON.Vector3(0, 0, 0);
-                            duck.scaling.scaleInPlace(0.2);
-                            duck.startPos = duck.position.clone();
-                            duck.startRot = duck.rotation.clone();
-                            duck.startScale = duck.scaling.clone();
-                            models.push(duck);
-                            last = duck;
+                        BABYLON.SceneLoader.ImportMesh("", "assets/", "bunny.glb", scene, function (meshes) {
+                            var bunny = meshes[0];
+                            bunny.position = pos;
+                            bunny.rotationQuaternion = null;
+                            bunny.rotation = new BABYLON.Vector3(0, 0, 0);
+                            bunny.scaling.scaleInPlace(0.2);
+                            bunny.startPos = bunny.position.clone();
+                            bunny.startRot = bunny.rotation.clone();
+                            bunny.startScale = bunny.scaling.clone();
+                            models.push(bunny);
+                            last = bunny;
                         });
                     }
                 });
