@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Q2</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+        #renderCanvas { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<script>
+var canvas = document.getElementById("renderCanvas");
+var engine = new BABYLON.Engine(canvas, true);
+
+var createScene = async function () {
+    var scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+
+    var camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 1.6, -2), scene);
+    camera.setTarget(new BABYLON.Vector3(0, 1, 1));
+    camera.attachControl(canvas, true);
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+    var models = [];
+    var last = null;
+
+    var xr = await scene.createDefaultXRExperienceAsync({
+        uiOptions: { sessionMode: "immersive-ar", referenceSpaceType: "local-floor" },
+        optionalFeatures: ["hit-test"],
+        disableTeleportation: true
+    });
+    if (!xr.baseExperience) {
+        return scene;
+    }
+    var sm = xr.baseExperience.sessionManager;
+
+    var hitSource = null;
+    var hitPos = null;
+    var rightStick = null;
+    var leftStick = null;
+
+    xr.input.onControllerAddedObservable.add(function (controller) {
+        var hand = controller.inputSource.handedness;
+
+        if (hand === "right") {
+            sm.session.requestHitTestSource({ space: controller.inputSource.targetRaySpace }).then(function (s) {
+                hitSource = s;
+            });
+        }
+
+        controller.onMotionControllerInitObservable.add(function (mc) {
+            var trigger = mc.getComponent("xr-standard-trigger");
+            var stick = mc.getComponent("xr-standard-thumbstick");
+            var a = mc.getComponent("a-button");
+            var b = mc.getComponent("b-button");
+            var x = mc.getComponent("x-button");
+
+            if (hand === "right") {
+                rightStick = stick;
+                trigger.onButtonStateChangedObservable.add(function () {
+                    if (trigger.changes.pressed && trigger.pressed && hitPos) {
+                        var pos = hitPos.clone();
+                        BABYLON.SceneLoader.ImportMesh("", "assets/", "Duck.glb", scene, function (meshes) {
+                            var duck = meshes[0];
+                            duck.position = pos;
+                            duck.rotationQuaternion = null;
+                            duck.rotation = new BABYLON.Vector3(0, 0, 0);
+                            duck.scaling.scaleInPlace(0.2);
+                            duck.startPos = duck.position.clone();
+                            duck.startRot = duck.rotation.clone();
+                            duck.startScale = duck.scaling.clone();
+                            models.push(duck);
+                            last = duck;
+                        });
+                    }
+                });
+                a.onButtonStateChangedObservable.add(function () {
+                    if (a.changes.pressed && a.pressed && last) {
+                        last.scaling.scaleInPlace(1.1);
+                    }
+                });
+                b.onButtonStateChangedObservable.add(function () {
+                    if (b.changes.pressed && b.pressed && last) {
+                        last.scaling.scaleInPlace(0.9);
+                    }
+                });
+            }
+
+            if (hand === "left") {
+                leftStick = stick;
+                x.onButtonStateChangedObservable.add(function () {
+                    if (x.changes.pressed && x.pressed && last) {
+                        last.position = last.startPos.clone();
+                        last.rotation = last.startRot.clone();
+                        last.scaling = last.startScale.clone();
+                    }
+                });
+            }
+        });
+    });
+
+    scene.onBeforeRenderObservable.add(function () {
+        var frame = sm.currentFrame;
+        hitPos = null;
+        if (hitSource && frame) {
+            var hits = frame.getHitTestResults(hitSource);
+            if (hits.length > 0) {
+                var pose = hits[0].getPose(sm.referenceSpace);
+                if (pose) {
+                    var m = BABYLON.Matrix.FromArray(pose.transform.matrix);
+                    if (!scene.useRightHandedSystem) {
+                        m.toggleModelMatrixHandInPlace();
+                    }
+                    hitPos = m.getTranslation();
+                }
+            }
+        }
+
+        if (!last) {
+            return;
+        }
+        if (rightStick) {
+            last.position.x += rightStick.axes.x * 0.01;
+            last.position.z -= rightStick.axes.y * 0.01;
+        }
+        if (leftStick) {
+            last.rotation.y += leftStick.axes.x * 0.03;
+        }
+    });
+
+    return scene;
+};
+
+createScene().then(function (scene) {
+    engine.runRenderLoop(function () {
+        scene.render();
+    });
+});
+window.addEventListener("resize", function () {
+    engine.resize();
+});
+</script>
+</body>
+</html>
