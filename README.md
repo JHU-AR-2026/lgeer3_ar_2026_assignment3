@@ -1,5 +1,7 @@
 # lgeer3_ar_2026_assignment3
 
-- Q2_webxr: index.html and assets/bunny.glb
-- Q3e_projection: project.py
-- Q4_phong: 4a.js, 4b.js, 4c.js, index.html
+Lukas Geer (lgeer3), AR Assignment 3.
+
+- `Q2_webxr` AR page that places a bunny. Run `python -m http.server` in the folder and open it in a WebXR browser.
+- `Q3e_projection` projection script. Run `python project.py`.
+- `Q4_phong` Phong shader. Open `index.html` in a browser.
